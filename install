@@ -210,175 +210,175 @@ Dir.chdir "/usr"
 
 ####################################################################### script
 abort "Mac OS X too old, see: https://github.com/mistydemeo/tigerbrew" if mac? && macos_version < "10.5"
-abort "Don't run this as root!" if Process.uid.zero?
-abort <<-EOABORT unless !mac? || `dsmemberutil checkmembership -U "#{ENV["USER"]}" -G admin`.include?("user is a member")
-This script requires the user #{ENV["USER"]} to be an Administrator.
-EOABORT
+	#abort "Don't run this as root!" if Process.uid.zero?
+	abort <<-EOABORT unless !mac? || `dsmemberutil checkmembership -U "#{ENV["USER"]}" -G admin`.include?("user is a member")
+	This script requires the user #{ENV["USER"]} to be an Administrator.
+	EOABORT
 
-unless mac?
-  if File.writable?(HOMEBREW_PREFIX_DEFAULT) || File.writable?("/home/linuxbrew") || File.writable?("/home")
-    HOMEBREW_PREFIX = HOMEBREW_PREFIX_DEFAULT.freeze
-  else
-    Kernel.system "/usr/bin/sudo -n -v 2>/dev/null"
-    unless $?.success?
-      ohai "Select the Linuxbrew installation directory"
-      puts "- #{Tty.bold}Enter your password#{Tty.reset} to install to #{Tty.underline}#{HOMEBREW_PREFIX_DEFAULT}#{Tty.reset} (#{Tty.bold}recommended#{Tty.reset})"
-      puts "- #{Tty.bold}Press Control-D#{Tty.reset} to install to #{Tty.underline}#{ENV["HOME"]}/.linuxbrew#{Tty.reset}"
-      puts "- #{Tty.bold}Press Control-C#{Tty.reset} to cancel installation"
-    end
-    if sudo?
-      HOMEBREW_PREFIX = HOMEBREW_PREFIX_DEFAULT.freeze
-    else
-      HOMEBREW_PREFIX = "#{ENV["HOME"]}/.linuxbrew".freeze
-    end
-  end
-  HOMEBREW_REPOSITORY = "#{HOMEBREW_PREFIX}/Homebrew".freeze
-end
+	unless mac?
+	  if File.writable?(HOMEBREW_PREFIX_DEFAULT) || File.writable?("/home/linuxbrew") || File.writable?("/home")
+	    HOMEBREW_PREFIX = HOMEBREW_PREFIX_DEFAULT.freeze
+	  else
+	    Kernel.system "/usr/bin/sudo -n -v 2>/dev/null"
+	    unless $?.success?
+	      ohai "Select the Linuxbrew installation directory"
+	      puts "- #{Tty.bold}Enter your password#{Tty.reset} to install to #{Tty.underline}#{HOMEBREW_PREFIX_DEFAULT}#{Tty.reset} (#{Tty.bold}recommended#{Tty.reset})"
+	      puts "- #{Tty.bold}Press Control-D#{Tty.reset} to install to #{Tty.underline}#{ENV["HOME"]}/.linuxbrew#{Tty.reset}"
+	      puts "- #{Tty.bold}Press Control-C#{Tty.reset} to cancel installation"
+	    end
+	    if sudo?
+	      HOMEBREW_PREFIX = HOMEBREW_PREFIX_DEFAULT.freeze
+	    else
+	      HOMEBREW_PREFIX = "#{ENV["HOME"]}/.linuxbrew".freeze
+	    end
+	  end
+	  HOMEBREW_REPOSITORY = "#{HOMEBREW_PREFIX}/Homebrew".freeze
+	end
 
-# Tests will fail if the prefix exists, but we don't have execution
-# permissions. Abort in this case.
-abort <<-EOABORT if File.directory?(HOMEBREW_PREFIX) && (!File.executable? HOMEBREW_PREFIX)
-The Homebrew prefix, #{HOMEBREW_PREFIX}, exists but is not searchable. If this is
-not intentional, please restore the default permissions and try running the
-installer again:
-    sudo chmod 775 #{HOMEBREW_PREFIX}
-EOABORT
+	# Tests will fail if the prefix exists, but we don't have execution
+	# permissions. Abort in this case.
+	abort <<-EOABORT if File.directory?(HOMEBREW_PREFIX) && (!File.executable? HOMEBREW_PREFIX)
+	The Homebrew prefix, #{HOMEBREW_PREFIX}, exists but is not searchable. If this is
+	not intentional, please restore the default permissions and try running the
+	installer again:
+	    sudo chmod 775 #{HOMEBREW_PREFIX}
+	EOABORT
 
-ohai "This script will install:"
-puts "#{HOMEBREW_PREFIX}/bin/brew"
-puts "#{HOMEBREW_PREFIX}/share/doc/homebrew"
-puts "#{HOMEBREW_PREFIX}/share/man/man1/brew.1"
-puts "#{HOMEBREW_PREFIX}/share/zsh/site-functions/_brew"
-puts "#{HOMEBREW_PREFIX}/etc/bash_completion.d/brew"
-puts "#{HOMEBREW_CACHE}/"
-puts HOMEBREW_REPOSITORY.to_s
+	ohai "This script will install:"
+	puts "#{HOMEBREW_PREFIX}/bin/brew"
+	puts "#{HOMEBREW_PREFIX}/share/doc/homebrew"
+	puts "#{HOMEBREW_PREFIX}/share/man/man1/brew.1"
+	puts "#{HOMEBREW_PREFIX}/share/zsh/site-functions/_brew"
+	puts "#{HOMEBREW_PREFIX}/etc/bash_completion.d/brew"
+	puts "#{HOMEBREW_CACHE}/"
+	puts HOMEBREW_REPOSITORY.to_s
 
-group_chmods = %w[ bin bin/brew etc include lib sbin share var
-                   etc/bash_completion.d lib/pkgconfig var/log
-                   share/aclocal share/doc share/info share/locale share/man
-                   share/man/man1 share/man/man2 share/man/man3 share/man/man4
-                   share/man/man5 share/man/man6 share/man/man7 share/man/man8].
-               map { |d| File.join(HOMEBREW_PREFIX, d) }.
-               select { |d| chmod?(d) }
-# zsh refuses to read from these directories if group writable
-zsh_dirs = %w[share/zsh share/zsh/site-functions].
-           map { |d| File.join(HOMEBREW_PREFIX, d) }
-user_chmods = zsh_dirs.select { |d| user_only_chmod?(d) }
-chmods = group_chmods + user_chmods
-chowns = chmods.select { |d| chown?(d) }
-chgrps = chmods.select { |d| chgrp?(d) }
-mkdirs = %w[Cellar Homebrew bin etc include lib opt sbin share share/zsh share/zsh/site-functions var].
-         map { |d| File.join(HOMEBREW_PREFIX, d) }.
-         reject { |d| File.directory?(d) }
-mkdirs << HOMEBREW_REPOSITORY unless mkdirs.include?(HOMEBREW_REPOSITORY) || File.directory?(HOMEBREW_REPOSITORY)
+	group_chmods = %w[ bin bin/brew etc include lib sbin share var
+			   etc/bash_completion.d lib/pkgconfig var/log
+			   share/aclocal share/doc share/info share/locale share/man
+			   share/man/man1 share/man/man2 share/man/man3 share/man/man4
+			   share/man/man5 share/man/man6 share/man/man7 share/man/man8].
+		       map { |d| File.join(HOMEBREW_PREFIX, d) }.
+		       select { |d| chmod?(d) }
+	# zsh refuses to read from these directories if group writable
+	zsh_dirs = %w[share/zsh share/zsh/site-functions].
+		   map { |d| File.join(HOMEBREW_PREFIX, d) }
+	user_chmods = zsh_dirs.select { |d| user_only_chmod?(d) }
+	chmods = group_chmods + user_chmods
+	chowns = chmods.select { |d| chown?(d) }
+	chgrps = chmods.select { |d| chgrp?(d) }
+	mkdirs = %w[Cellar Homebrew bin etc include lib opt sbin share share/zsh share/zsh/site-functions var].
+		 map { |d| File.join(HOMEBREW_PREFIX, d) }.
+		 reject { |d| File.directory?(d) }
+	mkdirs << HOMEBREW_REPOSITORY unless mkdirs.include?(HOMEBREW_REPOSITORY) || File.directory?(HOMEBREW_REPOSITORY)
 
-group = `id -gn`.chomp
-abort "error: id -gn: failed" unless $?.success? && !group.empty?
+	group = `id -gn`.chomp
+	abort "error: id -gn: failed" unless $?.success? && !group.empty?
 
-unless group_chmods.empty?
-  ohai "The following existing directories will be made group writable:"
-  puts(*group_chmods)
-end
-unless user_chmods.empty?
-  ohai "The following existing directories will be made writable by user only:"
-  puts(*user_chmods)
-end
-unless chowns.empty?
-  ohai "The following existing directories will have their owner set to #{Tty.underline}#{ENV["USER"]}#{Tty.reset}:"
-  puts(*chowns)
-end
-unless chgrps.empty?
-  ohai "The following existing directories will have their group set to #{Tty.underline}#{group}#{Tty.reset}:"
-  puts(*chgrps)
-end
-unless mkdirs.empty?
-  ohai "The following new directories will be created:"
-  puts(*mkdirs)
-end
-if should_install_command_line_tools?
-  ohai "The Xcode Command Line Tools will be installed."
-end
+	unless group_chmods.empty?
+	  ohai "The following existing directories will be made group writable:"
+	  puts(*group_chmods)
+	end
+	unless user_chmods.empty?
+	  ohai "The following existing directories will be made writable by user only:"
+	  puts(*user_chmods)
+	end
+	unless chowns.empty?
+	  ohai "The following existing directories will have their owner set to #{Tty.underline}#{ENV["USER"]}#{Tty.reset}:"
+	  puts(*chowns)
+	end
+	unless chgrps.empty?
+	  ohai "The following existing directories will have their group set to #{Tty.underline}#{group}#{Tty.reset}:"
+	  puts(*chgrps)
+	end
+	unless mkdirs.empty?
+	  ohai "The following new directories will be created:"
+	  puts(*mkdirs)
+	end
+	if should_install_command_line_tools?
+	  ohai "The Xcode Command Line Tools will be installed."
+	end
 
-wait_for_user if STDIN.tty? && !ENV["TRAVIS"]
+	wait_for_user if STDIN.tty? && !ENV["TRAVIS"]
 
-if File.directory? HOMEBREW_PREFIX
-  sudo "/bin/chmod", "u+rwx", *chmods unless chmods.empty?
-  sudo "/bin/chmod", "g+rwx", *group_chmods unless group_chmods.empty?
-  sudo "/bin/chmod", "755", *user_chmods unless user_chmods.empty?
-  sudo "/bin/chown", ENV["USER"], *chowns unless chowns.empty?
-  sudo "/bin/chgrp", group, *chgrps unless chgrps.empty?
-else
-  sudo "/bin/mkdir", "-p", HOMEBREW_PREFIX
-  sudo "/bin/chown", "#{ENV["USER"]}:#{group}", HOMEBREW_PREFIX
-end
+	if File.directory? HOMEBREW_PREFIX
+	  sudo "/bin/chmod", "u+rwx", *chmods unless chmods.empty?
+	  sudo "/bin/chmod", "g+rwx", *group_chmods unless group_chmods.empty?
+	  sudo "/bin/chmod", "755", *user_chmods unless user_chmods.empty?
+	  sudo "/bin/chown", ENV["USER"], *chowns unless chowns.empty?
+	  sudo "/bin/chgrp", group, *chgrps unless chgrps.empty?
+	else
+	  sudo "/bin/mkdir", "-p", HOMEBREW_PREFIX
+	  sudo "/bin/chown", "#{ENV["USER"]}:#{group}", HOMEBREW_PREFIX
+	end
 
-unless mkdirs.empty?
-  sudo "/bin/mkdir", "-p", *mkdirs
-  sudo "/bin/chmod", "g+rwx", *mkdirs
-  sudo "/bin/chmod", "755", *zsh_dirs
-  sudo "/bin/chown", ENV["USER"], *mkdirs
-  sudo "/bin/chgrp", group, *mkdirs
-end
+	unless mkdirs.empty?
+	  sudo "/bin/mkdir", "-p", *mkdirs
+	  sudo "/bin/chmod", "g+rwx", *mkdirs
+	  sudo "/bin/chmod", "755", *zsh_dirs
+	  sudo "/bin/chown", ENV["USER"], *mkdirs
+	  sudo "/bin/chgrp", group, *mkdirs
+	end
 
-[HOMEBREW_CACHE, HOMEBREW_OLD_CACHE].compact.each do |cache|
-  sudo "/bin/mkdir", "-p", cache unless File.directory? cache
-  sudo "/bin/chmod", "g+rwx", cache if chmod? cache
-  sudo "/bin/chown", ENV["USER"], cache if chown? cache
-  sudo "/bin/chgrp", group, cache if chgrp? cache
-end
+	[HOMEBREW_CACHE, HOMEBREW_OLD_CACHE].compact.each do |cache|
+	  sudo "/bin/mkdir", "-p", cache unless File.directory? cache
+	  sudo "/bin/chmod", "g+rwx", cache if chmod? cache
+	  sudo "/bin/chown", ENV["USER"], cache if chown? cache
+	  sudo "/bin/chgrp", group, cache if chgrp? cache
+	end
 
-if should_install_command_line_tools?
-  ohai "Searching online for the Command Line Tools"
-  # This temporary file prompts the 'softwareupdate' utility to list the Command Line Tools
-  clt_placeholder = "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
-  sudo "/usr/bin/touch", clt_placeholder
-  clt_label = `softwareupdate -l | grep -B 1 -E "Command Line (Developer|Tools)" | awk -F"*" '/^ +\\*/ {print $2}' | sed 's/^ *//' | tail -n1`.chomp
-  ohai "Installing #{clt_label}"
-  sudo "/usr/sbin/softwareupdate", "-i", clt_label
-  sudo "/bin/rm", "-f", clt_placeholder
-  sudo "/usr/bin/xcode-select", "--switch", "/Library/Developer/CommandLineTools"
-end
+	if should_install_command_line_tools?
+	  ohai "Searching online for the Command Line Tools"
+	  # This temporary file prompts the 'softwareupdate' utility to list the Command Line Tools
+	  clt_placeholder = "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
+	  sudo "/usr/bin/touch", clt_placeholder
+	  clt_label = `softwareupdate -l | grep -B 1 -E "Command Line (Developer|Tools)" | awk -F"*" '/^ +\\*/ {print $2}' | sed 's/^ *//' | tail -n1`.chomp
+	  ohai "Installing #{clt_label}"
+	  sudo "/usr/sbin/softwareupdate", "-i", clt_label
+	  sudo "/bin/rm", "-f", clt_placeholder
+	  sudo "/usr/bin/xcode-select", "--switch", "/Library/Developer/CommandLineTools"
+	end
 
-# Headless install may have failed, so fallback to original 'xcode-select' method
-if should_install_command_line_tools? && STDIN.tty?
-  ohai "Installing the Command Line Tools (expect a GUI popup):"
-  sudo "/usr/bin/xcode-select", "--install"
-  puts "Press any key when the installation has completed."
-  getc
-  sudo "/usr/bin/xcode-select", "--switch", "/Library/Developer/CommandLineTools"
-end
+	# Headless install may have failed, so fallback to original 'xcode-select' method
+	if should_install_command_line_tools? && STDIN.tty?
+	  ohai "Installing the Command Line Tools (expect a GUI popup):"
+	  sudo "/usr/bin/xcode-select", "--install"
+	  puts "Press any key when the installation has completed."
+	  getc
+	  sudo "/usr/bin/xcode-select", "--switch", "/Library/Developer/CommandLineTools"
+	end
 
-abort <<-EOABORT if mac? && `/usr/bin/xcrun clang 2>&1` =~ /license/ && !$?.success?
-You have not agreed to the Xcode license.
-Before running the installer again please agree to the license by opening
-Xcode.app or running:
-    sudo xcodebuild -license
-EOABORT
+	abort <<-EOABORT if mac? && `/usr/bin/xcrun clang 2>&1` =~ /license/ && !$?.success?
+	You have not agreed to the Xcode license.
+	Before running the installer again please agree to the license by opening
+	Xcode.app or running:
+	    sudo xcodebuild -license
+	EOABORT
 
-ohai "Downloading and installing #{HOMEBREW_NAME}..."
-Dir.chdir HOMEBREW_REPOSITORY do
-  if git
-    # we do it in four steps to avoid merge errors when reinstalling
-    system git, "init", "-q"
+	ohai "Downloading and installing #{HOMEBREW_NAME}..."
+	Dir.chdir HOMEBREW_REPOSITORY do
+	  if git
+	    # we do it in four steps to avoid merge errors when reinstalling
+	    system git, "init", "-q"
 
-    # "git remote add" will fail if the remote is defined in the global config
-    system git, "config", "remote.origin.url", BREW_REPO
-    system git, "config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"
+	    # "git remote add" will fail if the remote is defined in the global config
+	    system git, "config", "remote.origin.url", BREW_REPO
+	    system git, "config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"
 
-    # ensure we don't munge line endings on checkout
-    system git, "config", "core.autocrlf", "false"
+	    # ensure we don't munge line endings on checkout
+	    system git, "config", "core.autocrlf", "false"
 
-    args = git, "fetch", "origin", "master:refs/remotes/origin/master",
-           "--tags", "--force"
-    system(*args)
+	    args = git, "fetch", "origin", "master:refs/remotes/origin/master",
+		   "--tags", "--force"
+	    system(*args)
 
-    system git, "reset", "--hard", "origin/master"
+	    system git, "reset", "--hard", "origin/master"
 
-    system "ln", "-sf", "#{HOMEBREW_REPOSITORY}/bin/brew", "#{HOMEBREW_PREFIX}/bin/brew" unless HOMEBREW_REPOSITORY == HOMEBREW_PREFIX
+	    system "ln", "-sf", "#{HOMEBREW_REPOSITORY}/bin/brew", "#{HOMEBREW_PREFIX}/bin/brew" unless HOMEBREW_REPOSITORY == HOMEBREW_PREFIX
 
-    system "#{HOMEBREW_PREFIX}/bin/brew", "update", "--force"
-  else
-    # -m to stop tar erroring out if it can't modify the mtime for root owned directories
+	    system "#{HOMEBREW_PREFIX}/bin/brew", "update", "--force"
+	  else
+	    # -m to stop tar erroring out if it can't modify the mtime for root owned directories
     # pipefail to cause the exit status from curl to propagate if it fails
     curl_flags = "fsSL"
     curl_flags += "k" if mac? && macos_version < "10.6"
